@@ -37,7 +37,12 @@ public abstract class JsonAdapter<T> {
   }
 
   @CheckReturnValue public final @Nullable T fromJson(String string) throws IOException {
-    return fromJson(new Buffer().writeUtf8(string));
+    JsonReader reader = JsonReader.of(new Buffer().writeUtf8(string));
+    T result = fromJson(reader);
+    if (reader.peek() != JsonReader.Token.END_DOCUMENT) {
+      throw new JsonDataException("JSON document was not fully consumed.");
+    }
+    return result;
   }
 
   public abstract void toJson(JsonWriter writer, @Nullable T value) throws IOException;

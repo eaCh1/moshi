@@ -21,6 +21,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import javax.annotation.Nullable;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
@@ -181,5 +182,23 @@ public final class JsonAdapterTest {
     JsonWriter writer = factory.newWriter();
     serializeNulls.toJson(writer, Collections.<String, String>singletonMap("a", null));
     assertThat(factory.json()).isEqualTo("{\"a\":null}");
+  }
+
+  @Test public void stringDocumentMustBeFullyConsumed() throws IOException {
+    JsonAdapter<String> brokenAdapter = new JsonAdapter<String>() {
+      @Override public String fromJson(JsonReader reader) throws IOException {
+        return "Forgot to call reader.nextString().";
+      }
+
+      @Override public void toJson(JsonWriter writer, @Nullable String value) throws IOException {
+        throw new AssertionError();
+      }
+    };
+    try {
+      brokenAdapter.fromJson("\"value\"");
+      fail();
+    } catch (JsonDataException e) {
+      assertThat(e).hasMessage("JSON document was not fully consumed.");
+    }
   }
 }
