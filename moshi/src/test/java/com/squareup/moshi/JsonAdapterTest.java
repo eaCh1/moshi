@@ -201,4 +201,18 @@ public final class JsonAdapterTest {
       assertThat(e).hasMessage("JSON document was not fully consumed.");
     }
   }
+
+  @Test public void lenientAdapterDoesNotCheckStringDocumentConsumption() throws IOException {
+    JsonAdapter<String> brokenAdapter = new JsonAdapter<String>() {
+      @Override public String fromJson(JsonReader reader) throws IOException {
+        return "Forgot to call reader.nextString().";
+      }
+
+      @Override public void toJson(JsonWriter writer, @Nullable String value) throws IOException {
+        throw new AssertionError();
+      }
+    }.lenient();
+    assertThat(brokenAdapter.fromJson("\"value\"")).isEqualTo(
+        "Forgot to call reader.nextString().");
+  }
 }

@@ -30,6 +30,16 @@ import okio.BufferedSource;
  * Converts Java values to JSON, and JSON values to Java.
  */
 public abstract class JsonAdapter<T> {
+  private final boolean lenient;
+
+  public JsonAdapter() {
+    lenient = false;
+  }
+
+  private JsonAdapter(boolean lenient) {
+    this.lenient = lenient;
+  }
+
   @CheckReturnValue public abstract @Nullable T fromJson(JsonReader reader) throws IOException;
 
   @CheckReturnValue public final @Nullable T fromJson(BufferedSource source) throws IOException {
@@ -39,7 +49,7 @@ public abstract class JsonAdapter<T> {
   @CheckReturnValue public final @Nullable T fromJson(String string) throws IOException {
     JsonReader reader = JsonReader.of(new Buffer().writeUtf8(string));
     T result = fromJson(reader);
-    if (reader.peek() != JsonReader.Token.END_DOCUMENT) {
+    if (!lenient && reader.peek() != JsonReader.Token.END_DOCUMENT) {
       throw new JsonDataException("JSON document was not fully consumed.");
     }
     return result;
@@ -150,7 +160,7 @@ public abstract class JsonAdapter<T> {
   /** Returns a JSON adapter equal to this, but is lenient when reading and writing. */
   @CheckReturnValue public final JsonAdapter<T> lenient() {
     final JsonAdapter<T> delegate = this;
-    return new JsonAdapter<T>() {
+    return new JsonAdapter<T>(true) {
       @Override public @Nullable T fromJson(JsonReader reader) throws IOException {
         boolean lenient = reader.isLenient();
         reader.setLenient(true);
